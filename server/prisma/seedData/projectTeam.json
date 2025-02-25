@@ -1,0 +1,12 @@
+[
+  { "teamId": 1, "projectId": 1 },
+  { "teamId": 1, "projectId": 2 },
+  { "teamId": 1, "projectId": 3 },
+  { "teamId": 1, "projectId": 4 },
+  { "teamId": 1, "projectId": 5 },
+  { "teamId": 1, "projectId": 6 },
+  { "teamId": 1, "projectId": 7 },
+  { "teamId": 1, "projectId": 8 },
+  { "teamId": 1, "projectId": 9 },
+  { "teamId": 1, "projectId": 10 }
+]
