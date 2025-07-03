@@ -1,0 +1,305 @@
+Readme file
+
+First clone the project repo to your own github:
+https://github.com/Xeno761/ProjectXpert
+
+google krlo , 2 min ka step hai
+
+As its completed let's deploy the project on aws 
+
+Make necessary changes if you want to make any then do the following:
+
+First lets setup netowork connfiguration:
+
+for that head to vpc in aws 
+Create vpc 
+-give it a name
+- cidr block - 10.0.0.0/16
+ 
+Create subnet 
+
+create a public_subnet
+-select az
+- vpc cidr = 10.0.0.0/16
+- subnet cidr = 10.0.0.0/24
+
+create private_subnet1
+-select az ap1a
+- vpc cidr = 10.0.0.0/16
+- subnet cidr = 10.0.1.0/24
+
+create private_subnet2
+-select az ap2b
+- vpc cidr = 10.0.0.0/16
+- subnet cidr = 10.0.2.0/24
+
+Why 3 subnets? 1 for ec2 , other 2 are needed by rds in 2 different availability zones
+
+Create IGW:
+give name and create
+-attach it to vpc we created
+
+Create route table:
+we will create 3 route tables for 3 subnets we created
+create public rt
+- select vpc and create 
+go to actions , edit subnet associations select public subnet we created 
+
+create private rt 1
+- select vpc and create 
+go to actions , edit subnet associations select private subnet 1 we created 
+
+create private rt 2
+- select vpc and create 
+go to actions , edit subnet associations select private subnet 2 we created 
+
+
+Now go to public route table 
+routes -> edit routes 
+-add route
+ - select 0.0.0.0/0 and target will be internet gateway that we created above
+
+
+Launch an EC2 instance 
+-Give name 
+- AMI = Amazon inux
+-kp make or use existing
+- network settings ( imp)
+create security group 
+ -allow ssh , allow http , allow https 
+now click edit ( on network settings )
+ - use vpc we made with public_subnet
+ - Enable auto assign ip 
+ - change security group name and remember it eg pm_ec2_sg
+ launch ec2 instance
+ 
+done now lets make rds db instance:
+-create 
+- standard create
+- Engine = postgressql
+
+-Templetes = free tier
+ 
+ master password = give whatever but remember it
+ 
+Under storage > additional storage connfiguration
+untick enable storage autoscalling
+
+connectivity:
+- dont connect ec2
+-vpc = the one we created
+- public access= no
+- security group = give name (we will configure it later)
+- Availabilty zone = any from the available
+
+Monitoring:
+Turn off performance insights
+
+Additional configuration:
+initial db name: projectmanagement (keep it same)
+
+backup = untick enable auto backups
+untick enable encryption
+untick auto minor upgrade
+
+create db 
+after its created remember the master password and endpoint
+ 
+ 
+ 
+done now connect to your ec2 instance ( can do through browser itself) 
+execute the followinng:
+sudo su -
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+. ~/.nvm/nvm.sh
+nvm install node
+sudo yum update -y
+sudo yum install git -y
+git clone https://github.com/Xeno761/ProjectXpert.git
+cd ProjectXpert
+cd server
+npm i
+
+Here make sure to replace the password that you gave in rds and the endpoint url , port by default is 5432 unless u changed it and projectmanagement is the database name that we gave
+echo "PORT=80
+DATABASE_URL=postgresql://postgres:PasswordRDS@ENDPOINTURLRDS:5432/projectmanagement?schema=public" > .env
+
+now let's seed data into our database using the following commands :
+
+npx prisma generate
+ npx prisma migrate dev --name init 
+ npm run seed
+ 
+ then if says seeded 
+
+lets start the backend server 
+npm i pm2 -g
+pm2 start ecosystem.config.js
+
+
+Now lets move to sg of rds that we created new while setting up rds
+select security group:
+edit inbound rules:
+add rule
+postgressql, source:custom and select the sg that we created while making ec2 eg pm_ec2_sg
+-save rules
+
+Now go to ec2 sg , edit outbound rules:
+add rulepostgressql , custom and selecr rds security group
+
+this is our backend server setup
+our ec2 and rds are fully connected 
+
+lets check if our server is running 
+copy the ec2 public url 
+then in browser : httop://ec2_url/users
+
+if it shows data , nicee
+
+
+Now search for api gateway in aws:
+- create api
+- rest api
+- build 
+in that give it a name , leave everything else default then create api
+
+after that we need to create resource in our created api
+
+click create resource
+- enable the proxy resource toggle
+in resource name type {proxy+}
+tick CORS and create resource
+
+afyeer that in resources u will see "ANY"
+cick on that , set integration requests
+- select https 
+- tick the option of http proxy
+- http method = any
+- endpoint url = https://ec2_url/{proxy}
+
+make sure to add that proxy at end of your ec2 url
+leave everything else default and save
+
+Now on top right u will see deploy api , click on that 
+Stage = new
+Stage name = prod
+done , deploy it
+
+now from left mewnu below resources u can see stages , go their , copy the invoke url
+paste it in browser and at the end add /users , if the shows the same data as the ec2_url/users as we seen above , nicee x2
+
+
+lets move on to cognito now ,
+create user pool 
+single page application
+- configure options
+tick email , username
+- select attributes : given_name , email , family_name
+create 
+
+now thoda dimag use krke find user pool id and client id , copy it and keep it safe along side the api gateway invoke url
+
+
+Now go back to api gateway , below stages there will be authorizers
+,
+ create autheirzer 
+ - gice name 
+ - auth type = cognito
+ - token sourcee = Authorization
+ 
+save it 
+
+
+now lets configure lambda then move on to final steps:
+
+create lambda function (everything default )
+copy the below code ( change the hostname to your api gateway invoke url but without the https and /prod )
+see the below code and replace accordingly
+then deploy it
+
+
+import https from "https";
+
+export const handler = async (event) => {
+    try {
+        const { sub, given_name, family_name } = event.request.userAttributes;
+        const username = event.userName;
+
+        // User data payload
+        const userData = JSON.stringify({
+            cognitoId: sub,
+            username: username,
+            email: null,
+            firstName: given_name,
+            lastName: family_name,
+            profilePictureUrl: "p3.jpeg",
+            teamId: 1,
+            company: "Quantum Innovations",
+            role: "Developer",
+        });
+
+        const options = {
+            hostname: "dybi6q7mca.execute-api.ap-south-1.amazonaws.com",
+            path: "/prod/users",
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(userData),
+            },
+        };
+
+        await new Promise((resolve, reject) => {
+            const req = https.request(options, (res) => {
+                res.on("data", (d) => process.stdout.write(d));
+                res.on("end", resolve);
+            });
+
+            req.on("error", reject);
+            req.write(userData);
+            req.end();
+        });
+
+        return event; // Continue Cognito flow
+    } catch (error) {
+        console.error("Error sending user data:", error);
+        throw error;
+    }
+};
+
+ 
+now go back to cognito , select user pool , u will find extensions in left menu , click on that and add a post confirmation lambda trigger 
+save it and lets move on  to the last step :
+
+- Go and search amplify on aws
+
+- create new app
+- deply app , select github ( bola tha first step mai ki clone krlena khud ke git pr)
+- login and give access of ypur git to your aws 
+- select the projectxpert repo
+- main branch 
+- tick the option , my app is a momorepo
+
+in momorepo root directory , write: 
+client
+- click next , it should automatically detect framework as next.js
+ click on advance
+ 
+ in environment varialbles add the following key=value
+ 
+
+NEXT_PUBLIC_API_BASE_URL https://dybi6q7mca.execute-api.ap-south-1.amazonaws.com/prod (theinvoke url of api gateway)
+NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID	7gm6jrb7bje621dh2gujp8ib8i (the client id of cognito)
+NEXT_PUBLIC_COGNITO_USER_POOL_ID	ap-south-1_5pk8a28GR  (userpool id of cognito)
+
+
+done 
+
+click next 
+save and deploy 
+
+let it deploy then visit the amplify site that u will get 
+
+
+hogya bc
+nachooo
+
