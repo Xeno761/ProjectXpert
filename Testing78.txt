@@ -1,0 +1,75 @@
+Testing Types:
+
+API Testing-Verified REST API endpoints (CRUD operations, auth) using Postman & Redux DevTools
+UI/Visual Testing-Checked layout, spacing, and element boundaries using Pesticide CSS
+Functional Testing-Ensured features work as expected (task creation, assignment, auth, etc.)
+State Management Testing-Verified API call states (loading, success, error) and Redux state transitions
+Responsive Testing-Checked layout behavior on different screen sizes (desktop, tablet, mobile)
+Manual Testing-Explored app manually to check flows, edge cases, and UI behavior
+
+
+Testing Tools:
+
+Postman	API: endpoint testing (GET, POST, PUT, DELETE)
+Redux DevTools( extension): Monitored Redux state, async API calls via RTK Query
+Pesticide ( extension): Visual UI testing - outlines every element on page
+Redux DevTools ( extension): Network/API response checking, element inspection
+Tailwind CSS Dev Mode : Helped in debugging responsive designs & classes
+PostgreSQL & PGAdmin : To check database queries
+
+
+Tests performed: 
+
+Login and stuff
+Task Management
+User Management
+Dashboard UI
+
+
+How it helped:
+-pesticide helped checking layout alignment
+- postman helped in testing backend endpoints
+- dEVTOOLS greatly improved debugging of API state real time
+
+Types of testing performed:
+Functional Testing
+Focuses on whether the app works as expected (features, flows, forms, etc.)
+
+Integration Testing
+Ensures different modules (like frontend + API + DB) work together
+
+ UI / Visual Testing
+Checks visual correctness and layout
+
+ Responsive / Cross-Browser Testing
+Verifies layout adapts to different screen sizes or devices
+
+ Manual Testing
+Performed by humans using the app like real users would
+
+
+How were these tests performed:
+- we deployed our application on localhost 
+- using nodemon library we were able to make live changes in code while it was deployed , without the need to restart the server
+- if any error in code logs are generated live in terminal , easy to debug
+
+Postman:
+we checked backend endpoint crud operations using this tool 
+ how?
+enter our localhost url in the request box
+select the operation we are performing , like get , post etc
+send the request
+if the ooutput shows no error and via some manual testing of backend using manual testing ( checking database and query)
+successfully tested
+
+RTK Queries:
+when performing operations , keep devtools running for out localhost , it logs all api calls and if they went smoothly or was forbidden the access ( makes it easy to know what exactly is getting denied)
+
+Pesticide:
+just enable in browser to check alignments easyyy pesyyy
+
+Party de ab , professional tester 78 
+
+
+
+
